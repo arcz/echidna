@@ -35,7 +35,7 @@ import Echidna.Transaction (Tx(..), World(..))
 
 import EVM hiding (contracts)
 import qualified EVM (contracts)
-import EVM.ABI      (AbiType, AbiValue(..))
+import EVM.ABI      (AbiType, AbiValue(..), encodeAbiValue)
 import EVM.Exec     (vmForEthrunCreation)
 import EVM.Solidity
 import EVM.Types    (Addr)
@@ -100,9 +100,9 @@ contracts fp = let usual = ["--solc-disable-warnings", "--export-format", "solc"
 
 
 addresses :: (MonadReader x m, Has SolConf x) => m [AbiValue]
-addresses = do 
-              (SolConf ca d ads _ _ _ _ _ _) <- view hasLens
-              return $ map (AbiAddress . fromIntegral) $ nub $ ads ++ [ca, d, 0x0]
+addresses = let mine n = [n, AbiBytesDynamic $ encodeAbiValue n]; addr = AbiAddress . fromIntegral in
+  view hasLens <&> \(SolConf ca d ads _ _ _ _ _ _) -> nub (ads ++ [ca, d, 0x0]) >>= mine . addr
+  
 
 populateAddresses :: [Addr] -> Integer -> VM -> VM
 populateAddresses []     _ vm = vm
